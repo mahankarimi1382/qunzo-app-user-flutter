@@ -1,0 +1,53 @@
+name: Build Flutter Android APK
+
+# ۱. تنظیمات راه‌اندازی (Triggers)
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # امکان اجرای دستی از طریق پنل گیت‌هاب
+
+jobs:
+  build_android:
+    name: Build Flutter Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # ۲. دریافت کدها از ریپازیتوری
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      # ۳. نصب و تنظیم Java JDK 17 (الزامی برای Gradle جدید)
+      - name: ☕ Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # ۴. نصب و تنظیم فلاتر (نسخه پایدار به همراه قابلیت Cache)
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      # ۵. بررسی نسخه فلاتر (جهت لاگ و دیباگ)
+      - name: 📋 Show Flutter version
+        run: flutter --version
+
+      # ۶. دریافت وابستگی‌های پروژه
+      - name: 📦 Get dependencies
+        run: flutter pub get
+
+      # ۷. ساخت فایل APK نسخه Release
+      - name: 🏗️ Build Release APK
+        run: flutter build apk --release
+
+      # ۸. آپلود فایل خروجی به عنوان Artifact
+      - name: 📤 Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Qunzo-Release-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 7 # فایل تا ۷ روز در سرور گیت‌هاب می‌ماند

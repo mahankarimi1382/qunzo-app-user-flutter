@@ -1,53 +1,58 @@
 name: Build Flutter Android APK
 
-# ۱. تنظیمات راه‌اندازی (Triggers)
 on:
   push:
     branches: [ "main", "master", "develop" ]
   pull_request:
     branches: [ "main", "master" ]
-  workflow_dispatch: # امکان اجرای دستی از طریق پنل گیت‌هاب
+  workflow_dispatch:
 
 jobs:
   build_android:
     name: Build Flutter Android APK
     runs-on: ubuntu-latest
 
+    # 🎯 تنظیم حیاتی: تمام دستورات run درون پوشه agent اجرا می‌شوند
+    defaults:
+      run:
+        working-directory: agent 
+
     steps:
-      # ۲. دریافت کدها از ریپازیتوری
+      # ۱. دریافت کدها (این مرحله همیشه در ریشه ریپازیتوری اجرا می‌شود)
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      # ۳. نصب و تنظیم Java JDK 17 (الزامی برای Gradle جدید)
+      # ۲. تنظیم Java
       - name: ☕ Setup Java JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # ۴. نصب و تنظیم فلاتر (نسخه پایدار به همراه قابلیت Cache)
+      # ۳. تنظیم فلاتر
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
 
-      # ۵. بررسی نسخه فلاتر (جهت لاگ و دیباگ)
+      # ۴. بررسی نسخه (اجرا در پوشه agent)
       - name: 📋 Show Flutter version
         run: flutter --version
 
-      # ۶. دریافت وابستگی‌های پروژه
+      # ۵. دریافت وابستگی‌ها (اجرا در پوشه agent - خطای قبلی اینجا رفع می‌شود)
       - name: 📦 Get dependencies
         run: flutter pub get
 
-      # ۷. ساخت فایل APK نسخه Release
+      # ۶. ساخت APK (اجرا در پوشه agent)
       - name: 🏗️ Build Release APK
         run: flutter build apk --release
 
-      # ۸. آپلود فایل خروجی به عنوان Artifact
+      # ۷. آپلود فایل خروجی
       - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Qunzo-Release-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 7 # فایل تا ۷ روز در سرور گیت‌هاب می‌ماند
+          # ⚠️ اکشن‌های ثالث مسیر را از ریشه ریپازیتوری می‌سنجند، نه working-directory
+          path: agent/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 7
